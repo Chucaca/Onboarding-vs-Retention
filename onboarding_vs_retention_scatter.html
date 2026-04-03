@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding vs Retention Rate</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root{--bg:#191919;--s1:#1f1f1f;--s2:#2f2f2f;--bd:#ffffff14;--t1:#ffffffcf;--t2:#ffffff9e;--t3:#ffffff5e;--t4:#ffffff3d}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t1);font-family:'Inter',-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+.page{max-width:1100px;margin:0 auto;padding:48px 48px 60px}
+.icon{font-size:36px;margin-bottom:6px}
+.title{font-size:30px;font-weight:700;letter-spacing:-0.03em;line-height:1.2}
+.desc{color:var(--t3);font-size:13px;margin:4px 0 24px;line-height:1.6}
+.desc b{color:var(--t2);font-weight:600}
+.callout{display:flex;gap:10px;padding:14px 16px;border-radius:4px;background:var(--s2);margin-bottom:24px;font-size:13px;line-height:1.7}
+.callout-icon{flex-shrink:0;font-size:16px}
+.callout-text{color:var(--t2)}
+.callout-text b{color:var(--t1);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t3);cursor:pointer;padding:3px 8px;border-radius:4px;transition:all .15s;user-select:none}
+.leg-item:hover{background:#ffffff0a}
+.leg-item.off{opacity:.3}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.chart-wrap{position:relative;width:100%;aspect-ratio:16/10;background:var(--s1);border-radius:6px;border:1px solid var(--bd);overflow:hidden}
+.chart-canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+.tt{position:fixed;pointer-events:none;z-index:999;display:none;background:#2c2c2c;border:1px solid #ffffff20;border-radius:6px;padding:10px 14px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.5);max-width:300px;line-height:1.6}
+.tt-name{font-weight:700;font-size:13px;margin-bottom:2px}
+.tt-group{font-size:11px;color:var(--t3);margin-bottom:6px}
+.tt-row{display:flex;justify-content:space-between;gap:16px}
+.tt-label{color:var(--t3)}
+.tt-val{font-weight:600;font-variant-numeric:tabular-nums}
+.tt-divider{height:1px;background:#ffffff14;margin:5px 0}
+@media(max-width:768px){.page{padding:24px 16px 40px}.title{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="icon">🔄</div>
+  <div class="title">Onboarding thành công vs Retention Rate</div>
+  <div class="desc">
+    Trục X — <b>Tỷ lệ Onboarding thành công</b> (quay lại sử dụng trong 30 ngày đầu) · 
+    Trục Y — <b>Retention Rate</b> (% merchant đã churn tại thời điểm snapshot) · 
+    Bubble size — Số merchant lần đầu sử dụng
+  </div>
+
+  <div class="callout">
+    <div class="callout-icon">💡</div>
+    <div class="callout-text">
+      <b>Góc dưới-phải = Star Features</b> — onboarding cao + retention thấp (ít churn) → merchant dùng sớm và gắn bó lâu dài. 
+      <b>Góc trên-trái = Cần attention</b> — onboarding thấp + retention cao (churn nhiều) → merchant khó bắt đầu và dễ bỏ.
+    </div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+  <div class="chart-wrap"><canvas class="chart-canvas" id="chart"></canvas></div>
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+const DATA=[
+{"group":"Bán hàng","name":"Bán hàng","firstUse":7408,"onboard":96.0,"retention":81.5,"freq":23.6,"ahaPct":76.0},
+{"group":"Bán hàng","name":"Bảng giá","firstUse":1089,"onboard":93.3,"retention":70.2,"freq":15.4,"ahaPct":90.3},
+{"group":"Bán hàng","name":"Đặt bàn","firstUse":205,"onboard":42.0,"retention":11.7,"freq":3.3,"ahaPct":81.1},
+{"group":"Bán hàng","name":"Kênh bán hàng","firstUse":1519,"onboard":31.5,"retention":19.9,"freq":2.7,"ahaPct":86.5},
+{"group":"Bán hàng","name":"Order","firstUse":7743,"onboard":95.7,"retention":82.2,"freq":23.7,"ahaPct":74.4},
+{"group":"Online / Order","name":"eMenu","firstUse":494,"onboard":42.7,"retention":29.1,"freq":4.9,"ahaPct":81.7},
+{"group":"Online / Order","name":"Grab Food","firstUse":301,"onboard":97.7,"retention":74.8,"freq":15.8,"ahaPct":90.4},
+{"group":"Online / Order","name":"Mang đi","firstUse":1175,"onboard":64.9,"retention":18.6,"freq":5.1,"ahaPct":83.7},
+{"group":"Online / Order","name":"ShopeeFood","firstUse":238,"onboard":94.1,"retention":69.7,"freq":13.7,"ahaPct":90.8},
+{"group":"Online / Order","name":"Web Order","firstUse":233,"onboard":56.7,"retention":23.6,"freq":4.0,"ahaPct":81.7},
+{"group":"Online / Order","name":"Zalo Order","firstUse":90,"onboard":35.6,"retention":10,"freq":3.1,"ahaPct":73.1},
+{"group":"Giao hàng","name":"Giao hàng ngoài","firstUse":313,"onboard":74.4,"retention":53.7,"freq":8.0,"ahaPct":85.9},
+{"group":"HĐĐT","name":"HĐĐT kênh ngoài","firstUse":242,"onboard":84.3,"retention":64.9,"freq":16.3,"ahaPct":74.6},
+{"group":"HĐĐT","name":"HĐĐT KiotViet","firstUse":650,"onboard":91.4,"retention":82.8,"freq":16.4,"ahaPct":76.3},
+{"group":"KH & NCC","name":"Công nợ","firstUse":611,"onboard":99.3,"retention":95.7,"freq":27.2,"ahaPct":77.8},
+{"group":"KH & NCC","name":"KH trên hóa đơn","firstUse":2076,"onboard":73.2,"retention":45.9,"freq":9.8,"ahaPct":79.6},
+{"group":"KH & NCC","name":"Tạo khách hàng","firstUse":2472,"onboard":54.4,"retention":30.5,"freq":4.7,"ahaPct":76.1},
+{"group":"KH & NCC","name":"Tạo nhà cung cấp","firstUse":1216,"onboard":42.3,"retention":10.4,"freq":1.7,"ahaPct":75.8},
+{"group":"Menu","name":"Chế biến","firstUse":1256,"onboard":90.5,"retention":72.9,"freq":19.4,"ahaPct":80.4},
+{"group":"Menu","name":"Combo","firstUse":508,"onboard":84.1,"retention":45.9,"freq":11.0,"ahaPct":88.4},
+{"group":"Menu","name":"Dịch vụ","firstUse":5816,"onboard":93.6,"retention":76.6,"freq":21.7,"ahaPct":77.0},
+{"group":"Menu","name":"Hàng sản xuất","firstUse":547,"onboard":89.9,"retention":60.3,"freq":13.3,"ahaPct":89.9},
+{"group":"Menu","name":"Thuộc tính SP","firstUse":1459,"onboard":92.9,"retention":70.2,"freq":17.5,"ahaPct":83.7},
+{"group":"Menu","name":"Tính theo giờ","firstUse":1146,"onboard":92.8,"retention":80.5,"freq":22.9,"ahaPct":85.2},
+{"group":"Menu","name":"Topping","firstUse":2198,"onboard":88.1,"retention":66.9,"freq":12.3,"ahaPct":87.6},
+{"group":"Nhân sự","name":"Bảng lương","firstUse":2539,"onboard":62.9,"retention":10.3,"freq":1.1,"ahaPct":84.2},
+{"group":"Nhân sự","name":"Ca làm việc","firstUse":2382,"onboard":22.6,"retention":3.5,"freq":1.2,"ahaPct":84.6},
+{"group":"Nhân sự","name":"Chấm công","firstUse":1349,"onboard":78.4,"retention":43.9,"freq":13.9,"ahaPct":86.3},
+{"group":"Nhân sự","name":"Nhân viên","firstUse":2928,"onboard":31.5,"retention":8.9,"freq":1.3,"ahaPct":84.2},
+{"group":"Quản lý kho","name":"Kiểm kho","firstUse":3024,"onboard":57.0,"retention":24.8,"freq":3.4,"ahaPct":85.4},
+{"group":"Quản lý kho","name":"Nhập hàng","firstUse":2249,"onboard":63.5,"retention":32.1,"freq":6.5,"ahaPct":79.8},
+{"group":"Quản lý kho","name":"Tồn kho","firstUse":2972,"onboard":99.2,"retention":78.4,"freq":24.7,"ahaPct":79.1},
+{"group":"Quản lý kho","name":"Trả hàng bán","firstUse":318,"onboard":24.8,"retention":9.7,"freq":1.9,"ahaPct":96.2},
+{"group":"Quản lý kho","name":"Xuất hủy","firstUse":364,"onboard":53.0,"retention":24.5,"freq":3.8,"ahaPct":83.7},
+{"group":"Thanh toán ĐT","name":"MoMo","firstUse":89,"onboard":84.3,"retention":40.4,"freq":8.9,"ahaPct":95.5},
+{"group":"Thanh toán ĐT","name":"VietQR","firstUse":2451,"onboard":90.5,"retention":60.7,"freq":14.7,"ahaPct":91.0},
+{"group":"Vận hành","name":"Báo cáo BI","firstUse":8178,"onboard":46.1,"retention":19.4,"freq":2.3,"ahaPct":85.0},
+{"group":"Vận hành","name":"In bếp","firstUse":8194,"onboard":73.6,"retention":52.2,"freq":15.1,"ahaPct":80.8},
+{"group":"Vận hành","name":"Kết ca","firstUse":966,"onboard":86.9,"retention":64,"freq":19.8,"ahaPct":91.8},
+{"group":"Vận hành","name":"QL Bàn/Phòng","firstUse":7006,"onboard":96.4,"retention":80.9,"freq":23.1,"ahaPct":78.7}
+];
+
+const GROUPS=[...new Set(DATA.map(d=>d.group))];
+const PALETTE={
+  'Bán hàng':'#529cca','Online / Order':'#9a70d4','Giao hàng':'#d2813f',
+  'HĐĐT':'#4dab6f','KH & NCC':'#c95f8f','Menu':'#cb9731',
+  'Nhân sự':'#44b8b8','Quản lý kho':'#e06c60','Thanh toán ĐT':'#6cc070',
+  'Vận hành':'#a07553'
+};
+const tt=document.getElementById('tt');
+let hiddenGroups=new Set();
+
+// Legend
+const legend=document.getElementById('legend');
+GROUPS.forEach(g=>{
+  const el=document.createElement('div');
+  el.className='leg-item';
+  el.innerHTML=`<div class="leg-dot" style="background:${PALETTE[g]||'#888'}"></div>${g}`;
+  el.onclick=()=>{
+    if(hiddenGroups.has(g))hiddenGroups.delete(g);else hiddenGroups.add(g);
+    el.classList.toggle('off');draw();
+  };
+  legend.appendChild(el);
+});
+
+const canvas=document.getElementById('chart');
+const ctx=canvas.getContext('2d');
+let W,H;
+const pad={t:36,r:32,b:48,l:56};
+
+// Axes: X=Onboarding 0–100%, Y=Retention 0–80%
+const xMin=0,xMax=100,yMin=0,yMax=80;
+
+function resize(){
+  const rect=canvas.parentElement.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  W=rect.width;H=rect.height;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
+}
+
+function cx(v){return pad.l+(W-pad.l-pad.r)*((v-xMin)/(xMax-xMin));}
+function cy(v){return pad.t+(H-pad.t-pad.b)*(1-(v-yMin)/(yMax-yMin));}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const visible=DATA.filter(d=>!hiddenGroups.has(d.group));
+
+  // Grid
+  ctx.strokeStyle='#ffffff0c';ctx.lineWidth=1;
+  for(let y=0;y<=80;y+=10){
+    const py=cy(y);
+    ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(W-pad.r,py);ctx.stroke();
+    ctx.fillStyle='#ffffff4d';ctx.font='10px Inter';ctx.textAlign='right';
+    ctx.fillText(y+'%',pad.l-8,py+3);
+  }
+  for(let x=0;x<=100;x+=10){
+    const px=cx(x);
+    ctx.beginPath();ctx.moveTo(px,pad.t);ctx.lineTo(px,H-pad.b);ctx.stroke();
+    ctx.fillStyle='#ffffff4d';ctx.font='10px Inter';ctx.textAlign='center';
+    ctx.fillText(x+'%',px,H-pad.b+16);
+  }
+
+  // Quadrant dividers
+  const midX=70,midY=30;
+  ctx.setLineDash([4,4]);ctx.strokeStyle='#ffffff20';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx(midX),pad.t);ctx.lineTo(cx(midX),H-pad.b);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(pad.l,cy(midY));ctx.lineTo(W-pad.r,cy(midY));ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Quadrant shading & labels
+  // Bottom-right = Star (high onboard, low retention/churn)
+  ctx.fillStyle='#4dab6f08';
+  ctx.fillRect(cx(midX),cy(midY),W-pad.r-cx(midX),H-pad.b-cy(midY));
+  // Top-left = Problem (low onboard, high churn)
+  ctx.fillStyle='#e06c6008';
+  ctx.fillRect(pad.l,pad.t,cx(midX)-pad.l,cy(midY)-pad.t);
+
+  ctx.font='600 9px Inter';ctx.fillStyle='#ffffff28';
+  ctx.textAlign='right';ctx.fillText('⭐ HIGH ONBOARD · LOW CHURN',W-pad.r-6,H-pad.b-6);
+  ctx.textAlign='left';ctx.fillText('🚨 LOW ONBOARD · HIGH CHURN',pad.l+6,pad.t+14);
+  ctx.textAlign='left';ctx.fillText('🔍 LOW ONBOARD · LOW CHURN',pad.l+6,H-pad.b-6);
+  ctx.textAlign='right';ctx.fillText('⚠️ HIGH ONBOARD · HIGH CHURN',W-pad.r-6,pad.t+14);
+
+  // Axis labels
+  ctx.fillStyle='#ffffff5e';ctx.font='600 11px Inter';ctx.textAlign='center';
+  ctx.fillText('Tỷ lệ Onboarding thành công →',pad.l+(W-pad.l-pad.r)/2,H-6);
+  ctx.save();ctx.translate(14,pad.t+(H-pad.t-pad.b)/2);
+  ctx.rotate(-Math.PI/2);ctx.fillText('Retention Rate (% churn) →',0,0);
+  ctx.restore();
+
+  // Bubbles
+  const maxN=Math.max(...visible.map(d=>d.firstUse));
+  const sorted=[...visible].sort((a,b)=>b.firstUse-a.firstUse);
+
+  sorted.forEach(d=>{
+    const x=cx(d.onboard);
+    const yVal=Math.min(d.retention,yMax);
+    const y=cy(yVal);
+    const r=5+Math.sqrt(d.firstUse/maxN)*26;
+    const color=PALETTE[d.group]||'#888';
+
+    ctx.beginPath();ctx.arc(x,y,r+1,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fill();
+
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=color+'55';ctx.fill();
+    ctx.strokeStyle=color+'aa';ctx.lineWidth=1.5;ctx.stroke();
+
+    // Labels for notable dots
+    const isNotable=d.firstUse>=500||d.retention>=50||d.retention<=15||d.onboard<=35||d.onboard>=95;
+    if(isNotable){
+      ctx.font='500 10px Inter';
+      ctx.fillStyle='#ffffffb0';
+      // Smart label placement
+      let lx,align;
+      if(d.onboard>70){align='right';lx=x-r-4;}
+      else{align='left';lx=x+r+4;}
+      ctx.textAlign=align;
+      ctx.fillText(d.name,lx,y+3);
+    }
+  });
+
+  window._dots=sorted.map(d=>({
+    ...d,
+    px:cx(d.onboard),py:cy(Math.min(d.retention,yMax)),
+    r:5+Math.sqrt(d.firstUse/maxN)*26
+  }));
+}
+
+// Hover
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const dots=window._dots||[];
+  let hit=null;
+  for(const d of dots){
+    const dx=mx-d.px,dy=my-d.py;
+    if(dx*dx+dy*dy<=d.r*d.r){hit=d;break;}
+  }
+  if(hit){
+    canvas.style.cursor='pointer';
+    tt.style.display='block';
+    const retColor=hit.retention<=20?'#4dab6f':hit.retention<=40?'#cb9731':'#e06c60';
+    const obColor=hit.onboard>=80?'#4dab6f':hit.onboard>=50?'#cb9731':'#e06c60';
+    tt.innerHTML=`
+      <div class="tt-name" style="color:${PALETTE[hit.group]||'#fff'}">${hit.name}</div>
+      <div class="tt-group">${hit.group}</div>
+      <div class="tt-row"><span class="tt-label">Lần đầu SD</span><span class="tt-val">${hit.firstUse.toLocaleString()} merchants</span></div>
+      <div class="tt-divider"></div>
+      <div class="tt-row"><span class="tt-label">Onboarding %</span><span class="tt-val" style="color:${obColor}">${hit.onboard}%</span></div>
+      <div class="tt-row"><span class="tt-label">Retention Rate</span><span class="tt-val" style="color:${retColor}">${hit.retention}%</span></div>
+      <div class="tt-divider"></div>
+      <div class="tt-row"><span class="tt-label">AHA Rate</span><span class="tt-val">${hit.ahaPct}%</span></div>
+      <div class="tt-row"><span class="tt-label">Tần suất SD</span><span class="tt-val">${hit.freq} ngày/tháng</span></div>`;
+    tt.style.left=(e.clientX+14)+'px';
+    tt.style.top=(e.clientY-10)+'px';
+  }else{
+    canvas.style.cursor='default';
+    tt.style.display='none';
+  }
+});
+canvas.addEventListener('mouseleave',()=>{tt.style.display='none';});
+
+window.addEventListener('resize',resize);
+resize();
+</script>
+</body>
+</html>

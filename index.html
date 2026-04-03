@@ -48,8 +48,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',-apple-system,sans
   <div class="callout">
     <div class="callout-icon">💡</div>
     <div class="callout-text">
-      <b>Góc dưới-phải = Star Features</b> — onboarding cao + retention thấp (ít churn) → merchant dùng sớm và gắn bó lâu dài. 
-      <b>Góc trên-trái = Cần attention</b> — onboarding thấp + retention cao (churn nhiều) → merchant khó bắt đầu và dễ bỏ.
+      <b>Góc trên-phải = Core Features</b> — onboarding cao + retention cao (ít churn) → Tính năng Merchant dễ dàng sử dụng và dùng lâu dài
+      <b>Góc trên-trái = Cần attention</b> — onboarding thấp + retention cao (ít churn) → Tính năng Merchant sử dụng lâu dài nhưng khó dùng
     </div>
   </div>
 
@@ -182,10 +182,10 @@ function draw(){
   ctx.fillRect(pad.l,pad.t,cx(midX)-pad.l,cy(midY)-pad.t);
 
   ctx.font='600 9px Inter';ctx.fillStyle='#ffffff28';
-  ctx.textAlign='right';ctx.fillText('⭐ HIGH ONBOARD · LOW CHURN',W-pad.r-6,H-pad.b-6);
-  ctx.textAlign='left';ctx.fillText('🚨 LOW ONBOARD · HIGH CHURN',pad.l+6,pad.t+14);
-  ctx.textAlign='left';ctx.fillText('🔍 LOW ONBOARD · LOW CHURN',pad.l+6,H-pad.b-6);
-  ctx.textAlign='right';ctx.fillText('⚠️ HIGH ONBOARD · HIGH CHURN',W-pad.r-6,pad.t+14);
+  ctx.textAlign='right';ctx.fillText('🚨 HIGH ONBOARD · LOW RETENTION',W-pad.r-6,H-pad.b-6);
+  ctx.textAlign='left';ctx.fillText('⚠️ LOW ONBOARD · HIGH RETENTION',pad.l+6,pad.t+14);
+  ctx.textAlign='left';ctx.fillText('🔍 LOW ONBOARD · LOW RETENTION',pad.l+6,H-pad.b-6);
+  ctx.textAlign='right';ctx.fillText('⭐ HIGH ONBOARD · HIGH RETENTION',W-pad.r-6,pad.t+14);
 
   // Axis labels
   ctx.fillStyle='#ffffff5e';ctx.font='600 11px Inter';ctx.textAlign='center';
